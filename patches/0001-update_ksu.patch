@@ -1,0 +1,150 @@
+From 04bebcbac96ef678a93a753896ecc16423b220ee Mon Sep 17 00:00:00 2001
+From: runmain <runmain@user.noreply@gmail.com>
+Date: Wed, 17 Jul 2024 15:10:14 +0800
+Subject: [PATCH] update_ksu
+
+---
+ drivers/input/input.c | 10 ++++++++--
+ fs/exec.c             | 15 +++++++++++++--
+ fs/open.c             |  9 +++++++--
+ fs/read_write.c       | 10 +++++++++-
+ fs/stat.c             |  8 ++++++--
+ 5 files changed, 43 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index 6d9f58a4..b35ed7df 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -367,12 +367,18 @@ static int input_get_disposition(struct input_dev *dev,
+ 	*pval = value;
+ 	return disposition;
+ }
+-
++#ifdef CONFIG_KSU
++extern bool ksu_input_hook __read_mostly;
++extern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);
++#endif
+ static void input_handle_event(struct input_dev *dev,
+ 			       unsigned int type, unsigned int code, int value)
+ {
+ 	int disposition;
+-
++	#ifdef CONFIG_KSU
++		if (unlikely(ksu_input_hook))
++			ksu_handle_input_handle_event(&type, &code, &value);
++	#endif
+ 	disposition = input_get_disposition(dev, type, code, &value);
+ 
+ 	if ((disposition & INPUT_PASS_TO_DEVICE) && dev->event)
+diff --git a/fs/exec.c b/fs/exec.c
+index 341b872d..92806a92 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1526,7 +1526,13 @@ static int exec_binprm(struct linux_binprm *bprm)
+ 
+ 	return ret;
+ }
+-
++#ifdef CONFIG_KSU
++extern bool ksu_execveat_hook __read_mostly;
++extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
++			       void *envp, int *flags);
++extern int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
++					void *argv, void *envp, int *flags);
++#endif
+ /*
+  * sys_execve() executes a new program.
+  */
+@@ -1540,7 +1546,12 @@ static int do_execveat_common(int fd, struct filename *filename,
+ 	struct file *file;
+ 	struct files_struct *displaced;
+ 	int retval;
+-
++	#ifdef CONFIG_KSU
++		if (unlikely(ksu_execveat_hook))
++			ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
++		else
++			ksu_handle_execveat_sucompat(&fd, &filename, &argv, &envp, &flags);
++	#endif
+ 	if (IS_ERR(filename))
+ 		return PTR_ERR(filename);
+ 
+diff --git a/fs/open.c b/fs/open.c
+index b7e2889a..8f022d6b 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -337,7 +337,10 @@ SYSCALL_DEFINE4(fallocate, int, fd, int, mode, loff_t, offset, loff_t, len)
+ 	}
+ 	return error;
+ }
+-
++#ifdef CONFIG_KSU
++extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
++				int *flags);
++#endif
+ /*
+  * access() needs to use the real uid/gid, not the effective uid/gid.
+  * We do this by temporarily clearing all FS-related capabilities and
+@@ -352,7 +355,9 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	struct vfsmount *mnt;
+ 	int res;
+ 	unsigned int lookup_flags = LOOKUP_FOLLOW;
+-
++	#ifdef CONFIG_KSU
++		ksu_handle_faccessat(&dfd, &filename, &mode, NULL);
++	#endif
+ 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+ 		return -EINVAL;
+ 
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 27023e8f..d9989647 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -423,10 +423,18 @@ static ssize_t new_sync_read(struct file *filp, char __user *buf, size_t len, lo
+ 	*ppos = kiocb.ki_pos;
+ 	return ret;
+ }
+-
++#ifdef CONFIG_KSU
++extern bool ksu_vfs_read_hook __read_mostly;
++extern int ksu_handle_vfs_read(struct file **file_ptr, char __user **buf_ptr,
++			       size_t *count_ptr, loff_t **pos);
++#endif
+ ssize_t __vfs_read(struct file *file, char __user *buf, size_t count,
+ 		   loff_t *pos)
+ {
++	#ifdef CONFIG_KSU 
++	if (unlikely(ksu_vfs_read_hook))
++		ksu_handle_vfs_read(&file, &buf, &count, &pos);
++	#endif
+ 	if (file->f_op->read)
+ 		return file->f_op->read(file, buf, count, pos);
+ 	else if (file->f_op->read_iter)
+diff --git a/fs/stat.c b/fs/stat.c
+index 004dd77c..09f60bc8 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -86,14 +86,18 @@ int vfs_fstat(unsigned int fd, struct kstat *stat)
+ 	return error;
+ }
+ EXPORT_SYMBOL(vfs_fstat);
+-
++#ifdef CONFIG_KSU
++extern int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags);
++#endif
+ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 		int flag)
+ {
+ 	struct path path;
+ 	int error = -EINVAL;
+ 	unsigned int lookup_flags = 0;
+-
++	#ifdef CONFIG_KSU 
++		ksu_handle_stat(&dfd, &filename, &flag);
++	#endif
+ 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
+ 		      AT_EMPTY_PATH)) != 0)
+ 		goto out;
+-- 
+2.39.3 (Apple Git-146)
+
