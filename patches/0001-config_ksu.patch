@@ -1,0 +1,55 @@
+From f0bf05efed22d63b89f7b0c13be266c995f4cce6 Mon Sep 17 00:00:00 2001
+From: runmain <yuanmengliji@gmail.com>
+Date: Wed, 24 Jul 2024 10:52:07 +0800
+Subject: [PATCH] config_ksu
+
+---
+ arch/arm64/configs/chiron_defconfig | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/configs/chiron_defconfig b/arch/arm64/configs/chiron_defconfig
+index 6c7225af..9ce400ee 100644
+--- a/arch/arm64/configs/chiron_defconfig
++++ b/arch/arm64/configs/chiron_defconfig
+@@ -224,13 +224,13 @@ CONFIG_SLUB_CPU_PARTIAL=y
+ # CONFIG_SYSTEM_DATA_VERIFICATION is not set
+ CONFIG_PROFILING=y
+ CONFIG_TRACEPOINTS=y
+-CONFIG_KPROBES=y
++#CONFIG_KPROBES=y
+ CONFIG_JUMP_LABEL=y
+ # CONFIG_STATIC_KEYS_SELFTEST is not set
+ # CONFIG_UPROBES is not set
+ # CONFIG_HAVE_64BIT_ALIGNED_ACCESS is not set
+ CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+-CONFIG_KRETPROBES=y
++#CONFIG_KRETPROBES=y
+ CONFIG_HAVE_KPROBES=y
+ CONFIG_HAVE_KRETPROBES=y
+ CONFIG_HAVE_ARCH_TRACEHOOK=y
+@@ -4617,9 +4617,9 @@ CONFIG_BRANCH_PROFILE_NONE=y
+ # CONFIG_PROFILE_ALL_BRANCHES is not set
+ # CONFIG_STACK_TRACER is not set
+ # CONFIG_BLK_DEV_IO_TRACE is not set
+-CONFIG_KPROBE_EVENT=y
+-CONFIG_BPF_EVENTS=y
+-CONFIG_PROBE_EVENTS=y
++#CONFIG_KPROBE_EVENT=y
++#CONFIG_BPF_EVENTS=y
++#CONFIG_PROBE_EVENTS=y
+ CONFIG_CPU_FREQ_SWITCH_PROFILER=y
+ # CONFIG_FTRACE_STARTUP_TEST is not set
+ # CONFIG_TRACEPOINT_BENCHMARK is not set
+@@ -4946,3 +4946,8 @@ CONFIG_LIBFDT=y
+ CONFIG_ARCH_HAS_SG_CHAIN=y
+ CONFIG_QMI_ENCDEC=y
+ # CONFIG_QMI_ENCDEC_DEBUG is not set
++#
++# KernelSU
++#
++CONFIG_KSU=y
++# CONFIG_KSU_DEBUG is not set
+\ No newline at end of file
+-- 
+2.39.3 (Apple Git-146)
+
