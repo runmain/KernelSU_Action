@@ -195,6 +195,7 @@ jobs:
         git am $GITHUB_WORKSPACE/patches/0001-update_hooks.patch
         # git am $GITHUB_WORKSPACE/patches/0001-config_ksu.patch    
         cp $GITHUB_WORKSPACE/patches/chiron_defconfig arch/arm64/configs/vendor/xiaomi/chiron_defconfig
+        sed -i '41i#include <linux/uio.h>' net/tls/tls_sw.c
         cd $GITHUB_WORKSPACE/kernel_workspace
         if [[ ${{ env.ADD_LOCALVERSION_TO_FILENAME }} == 'true' ]]; then
           echo "LOCALVERSION=$(cat android-kernel/localversion)" >> $GITHUB_ENV
